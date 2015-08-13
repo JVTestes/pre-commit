@@ -11,10 +11,32 @@ define('ROOT_DIR', $vendorDir);
 
 class Hooks
 {
+    static $gitDir;
+    
+    protected function __construct()
+    {
+        $configXml = ROOT_DIR.DIRECTORY_SEPARATOR.'config.xml';
+
+        if (!file_exists($configXml)) {
+            throw new \Exception(sprintf('Configuration file not found!'));
+        }
+
+        $xml = simplexml_load_file($configXml);
+        if (!isset($xml->dir)) {
+            throw new \Exception(sprintf('Configuration node "dir" not found!'));
+        }
+
+        if (!isset($xml->dir->git)) {
+            throw new \Exception(sprintf('Configuration node "git" not found!'));
+        }
+        
+        static::$gitDir = strval($xml->dir->git);
+    }
+    
     public static function preHooks(Event $event)
     {
         $io = $event->getIO();
-        $gitHook = static::config()['git'].
+        $gitHook = static::$gitDir.
             DIRECTORY_SEPARATOR.'hooks'.
             DIRECTORY_SEPARATOR.'pre-commit';
 
@@ -29,7 +51,7 @@ class Hooks
     public static function postHooks(Event $event)
     {
         $io = $event->getIO();
-        $gitHook = static::config()['git'].
+        $gitHook = static::$gitDir.
             DIRECTORY_SEPARATOR.'hooks'.
             DIRECTORY_SEPARATOR.'pre-commit';
         
@@ -46,32 +68,5 @@ class Hooks
         $io->write('<info>Pre-commit created!</info>');
 
         return true;
-    }
-    
-    public static function config()
-    {
-        $configXml = ROOT_DIR.DIRECTORY_SEPARATOR.'config.xml';
-
-        if (!file_exists($configXml)) {
-            throw new \Exception(sprintf('Configuration file not found!'));
-        }
-
-        $xml = simplexml_load_file($configXml);
-        if (!isset($xml->dir)) {
-            throw new \Exception(sprintf('Configuration node "dir" not found!'));
-        }
-
-        if (!isset($xml->dir->git)) {
-            throw new \Exception(sprintf('Configuration node "git" not found!'));
-        }
-
-        if (!isset($xml->dir->root)) {
-            throw new \Exception(sprintf('Configuration node "root" not found!'));
-        }
-        
-        return [
-            'git' => strval($xml->dir->git),
-            'root' => strval($xml->dir->root),
-        ];
     }
 }
