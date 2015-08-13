@@ -2,7 +2,10 @@
 
 <?php
 
-define('VENDOR_DIR', __DIR__ . '/../../vendor');
+$fileDir = dirname(dirname(__FILE__));
+$vendorDir = dirname(dirname($fileDir));
+
+define('VENDOR_DIR', $vendorDir);
 
 require VENDOR_DIR.'/autoload.php';
 
@@ -15,7 +18,7 @@ class CodeQualityTool extends Application
 {
     private $output;
     private $input;
-
+    
     const PHP_FILES_IN_SRC = '/^src\/(.*)(\.php)$/';
     const PHP_FILES_IN_CLASSES = '/^classes\/(.*)(\.php)$/';
 
@@ -148,7 +151,7 @@ class CodeQualityTool extends Application
 
         if (file_exists($filePhpunit)) {
             $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/phpunit'));
-            $processBuilder->setWorkingDirectory(__DIR__ . '/../..');
+            $processBuilder->setWorkingDirectory(__DIR__ . '/../../');
             $processBuilder->setTimeout(3600);
             $phpunit = $processBuilder->getProcess();
 
