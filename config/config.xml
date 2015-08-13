@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
 <config name="Config_Pre_Commit">
-    <dir.root>/Users/Coderockr/Dev/planrockr/</dir.root>
-    <dir.git>/Users/Coderockr/Dev/planrockr/.git/</dir.git>
+    <dir>
+        <!--full path to the .git-->
+        <git>.../.git/</git>
+    </dir>
 </config>
