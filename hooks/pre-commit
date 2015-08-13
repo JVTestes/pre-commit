@@ -6,7 +6,8 @@ $fileDir = dirname(dirname(__FILE__));
 $vendorDir = dirname(dirname($fileDir));
 
 define('VENDOR_DIR', $vendorDir);
-
+define('ROOT_DIR', dirname($vendorDir));
+ 
 require VENDOR_DIR.'/autoload.php';
 
 use Symfony\Component\Console\Input\InputInterface;
@@ -18,9 +19,6 @@ class CodeQualityTool extends Application
 {
     private $output;
     private $input;
-    
-    const PHP_FILES_IN_SRC = '/^src\/(.*)(\.php)$/';
-    const PHP_FILES_IN_CLASSES = '/^classes\/(.*)(\.php)$/';
 
     public function __construct()
     {
@@ -110,25 +108,30 @@ class CodeQualityTool extends Application
 
     private function phPmd($files)
     {
-        $needle = self::PHP_FILES_IN_SRC;
+        $needle = '/(\.php)$/';
         $succeed = true;
-        $rootPath = realpath(__DIR__ . '/../../');
-
-        $fileRule = VENDOR_DIR. '/../phpmd.xml';
+        
+        $fileRule = ROOT_DIR.DIRECTORY_SEPARATOR.'phpmd.xml';
 
         if (file_exists($fileRule)) {
             $rule = $fileRule;
         } else {
             $rule = 'codesize,unusedcode,naming';
         }
-
+        
         foreach ($files as $file) {
             if (!preg_match($needle, $file)) {
                 continue;
             }
 
-            $processBuilder = new ProcessBuilder(['php', VENDOR_DIR.'/bin/phpmd', $file, 'text', $rule]);
-            $processBuilder->setWorkingDirectory($rootPath);
+            $processBuilder = new ProcessBuilder([
+                'php',
+                VENDOR_DIR.'/bin/phpmd',
+                $file,
+                'text',
+                $rule
+            ]);
+            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
             $process = $processBuilder->getProcess();
             $process->run();
 
@@ -147,11 +150,11 @@ class CodeQualityTool extends Application
 
     private function unitTests()
     {
-        $filePhpunit = VENDOR_DIR. '/../phpunit.xml';
+        $filePhpunit = ROOT_DIR.DIRECTORY_SEPARATOR.'phpunit.xml';
 
         if (file_exists($filePhpunit)) {
             $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/phpunit'));
-            $processBuilder->setWorkingDirectory(__DIR__ . '/../../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR);
             $processBuilder->setTimeout(3600);
             $phpunit = $processBuilder->getProcess();
 
@@ -168,19 +171,28 @@ class CodeQualityTool extends Application
 
     private function codeStyle(array $files)
     {
+        $needle = '/(\.php)$/';
         $succeed = true;
 
         foreach ($files as $file) {
-            $classesFile = preg_match(self::PHP_FILES_IN_CLASSES, $file);
-            $srcFile = preg_match(self::PHP_FILES_IN_SRC, $file);
+            $srcFile = preg_match($needle, $file);
 
-            if (!$classesFile && !$srcFile) {
+            if (!$srcFile) {
                 continue;
             }
 
-            $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/php-cs-fixer', '--dry-run', '--diff', '--verbose', 'fix', $file, '--level=psr2'));
+            $processBuilder = new ProcessBuilder([
+                'php',
+                VENDOR_DIR.'/bin/php-cs-fixer',
+                '--dry-run',
+                '--diff',
+                '--verbose',
+                'fix',
+                $file,
+                '--level=psr2'
+            ]);
 
-            $processBuilder->setWorkingDirectory(__DIR__ . '/../../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
@@ -199,9 +211,9 @@ class CodeQualityTool extends Application
     private function codeStylePsr(array $files)
     {
         $succeed = true;
-        $needle = self::PHP_FILES_IN_SRC;
+        $needle = '/(\.php)$/';
 
-        $phpcs = VENDOR_DIR. '/../phpcs.xml';
+        $phpcs = ROOT_DIR.DIRECTORY_SEPARATOR.'phpcs.xml';
 
         if (file_exists($phpcs)) {
             $standard = $phpcs;
@@ -214,8 +226,13 @@ class CodeQualityTool extends Application
                 continue;
             }
 
-            $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/phpcs', '--standard='.$standard, $file));
-            $processBuilder->setWorkingDirectory(__DIR__ . '/../../');
+            $processBuilder = new ProcessBuilder([
+                'php',
+                VENDOR_DIR.'/bin/phpcs',
+                '--standard='.$standard,
+                $file
+            ]);
+            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
