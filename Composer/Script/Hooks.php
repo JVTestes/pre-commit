@@ -4,7 +4,13 @@ namespace PreCommit\Composer\Script;
 
 use Composer\Script\Event;
 
-define('ROOT_DIR', __DIR__ . '/../../../../../');
+$vendorDir = dirname(dirname(__FILE__));
+$baseDir = dirname($vendorDir);
+
+
+var_dump($baseDir);die;
+
+define('VENDOR_DIR', __DIR__ . '/../../../../../');
 
 class Hooks
 {
@@ -33,5 +39,10 @@ class Hooks
         $io->write('<info>Pre-commit created!</info>');
 
         return true;
+    }
+    
+    private function config()
+    {
+        
     }
 }
