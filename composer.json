@@ -1,5 +1,5 @@
 {
-    "name": "juizmill/pre-commit",
+    "name": "jv-testes/pre-commit",
     "description": "Pre-commit hook",
     "type": "library",
     "homepage": "https://github.com/juizmill/pre-commit",
