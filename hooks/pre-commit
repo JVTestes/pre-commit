@@ -8,6 +8,8 @@ $vendorDir = dirname(dirname($fileDir));
 define('VENDOR_DIR', $vendorDir);
 define('ROOT_DIR', dirname($vendorDir));
  
+var_dump(ROOT_DIR);die;
+
 require VENDOR_DIR.'/autoload.php';
 
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,6 +51,11 @@ class CodeQualityTool extends Application
             throw new Exception(sprintf('There are PHPCS coding standards violations!'));
         }
 
+        $output->writeln('<info>Checking code style with PHPCS JS</info>');
+        if (!$this->codeStyleJS($files)) {
+            throw new Exception(sprintf('There are PHPCS JS coding standards violations!'));
+        }
+        
         $output->writeln('<info>Checking code mess with PHPMD</info>');
         if (!$this->phPmd($files)) {
             throw new Exception(sprintf('There are PHPMD violations!'));
@@ -227,6 +234,45 @@ class CodeQualityTool extends Application
             $standard = $phpcs;
         } else {
             $standard = 'PSR2';
+        }
+
+        foreach ($files as $file) {
+            if (!preg_match($needle, $file)) {
+                continue;
+            }
+
+            $processBuilder = new ProcessBuilder([
+                'php',
+                VENDOR_DIR.'/bin/phpcs',
+                '--standard='.$standard,
+                $file
+            ]);
+            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
+            $phpCsFixer = $processBuilder->getProcess();
+            $phpCsFixer->run();
+
+            if (!$phpCsFixer->isSuccessful()) {
+                $this->output->writeln(sprintf('<error>%s</error>', trim($phpCsFixer->getOutput())));
+
+                if ($succeed) {
+                    $succeed = false;
+                }
+            }
+        }
+
+        return $succeed;
+    }
+
+    private function codeStyleJS(array $files)
+    {
+        $succeed = true;
+        $needle = '/(\.js)$/';
+
+        $phpcsjs = ROOT_DIR.DIRECTORY_SEPARATOR.'phpcsjs.xml';
+
+        $standard = 'Squiz';
+        if (file_exists($phpcsjs)) {
+            $standard = $phpcsjs;
         }
 
         foreach ($files as $file) {
