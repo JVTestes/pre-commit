@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<config name="PHPCS-FIX">
-    <fixers>eof_ending,indentation,linefeed,lowercase_keywords,trailing_spaces,short_tag,php_closing_tag,extra_empty_lines,elseif,function_declaration</fixers>
-</config>
