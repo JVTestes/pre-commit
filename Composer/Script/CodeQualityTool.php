@@ -6,7 +6,7 @@ $fileDir = dirname(dirname(__FILE__));
 $vendorDir = dirname(dirname(dirname(dirname($fileDir))));
 
 define('VENDOR_DIR', $vendorDir);
-define('ROOT_DIR', dirname(dirname($vendorDir)));
+define('ROOT_DIR', dirname($vendorDir));
 
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,6 +23,13 @@ class CodeQualityTool extends Application
         $this->input = $input;
         $this->output = $output;
 
+        $xml = null;
+
+        $config = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'config.xml';
+        if (file_exists($config)) {
+            $xml = simplexml_load_file($config);
+        }
+        
         $output->writeln('<fg=white;options=bold;bg=red>Code Quality Tool</fg=white;options=bold;bg=red>');
         $output->writeln('<info>Fetching files</info>');
         $files = $this->extractCommitedFiles();
@@ -35,11 +42,13 @@ class CodeQualityTool extends Application
             throw new \Exception('There are some PHP syntax errors!');
         }
 
-        $output->writeln('<info>Checking code style</info>');
-        $codeStyle = $this->codeStyle($files);
-        if ($codeStyle !== true) {
-            $this->output->writeln(sprintf('<error>%s</error>', trim($codeStyle)));
-            throw new \Exception(sprintf('There are coding standards violations!'));
+        if (!isset($xml->run->phpcsfix) || ($xml->run->phpcsfix == 'true')) {
+            $output->writeln('<info>Checking code style</info>');
+            $codeStyle = $this->codeStyle($files);
+            if ($codeStyle !== true) {
+                $this->output->writeln(sprintf('<error>%s</error>', trim($codeStyle)));
+                throw new \Exception(sprintf('There are coding standards violations!'));
+            }
         }
 
         $output->writeln('<info>Checking code style with PHPCS</info>');
@@ -65,10 +74,12 @@ class CodeQualityTool extends Application
             throw new \Exception(sprintf('There are PHPMD violations!'));
         }
 
-        $output->writeln('<info>Running unit tests</info>');
-        if (!$this->unitTests()) {
-            throw new \Exception('Fix the fucking unit tests!');
-        }
+        if (!isset($xml->run->phpunit) || ($xml->run->phpunit == 'true')) {
+            $output->writeln('<info>Running unit tests</info>');
+            if (!$this->unitTests()) {
+                throw new \Exception('Fix the fucking unit tests!');
+            }
+        }      
 
         $output->writeln('<info>Good job dude!</info>');
     }
@@ -117,12 +128,11 @@ class CodeQualityTool extends Application
         $needle = '/(\.php)$/';
         $succeed = true;
         
-        $fileRule = ROOT_DIR.DIRECTORY_SEPARATOR.'phpmd.xml';
-
+        $fileRule = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpmd.xml';
+        
+        $rule = 'codesize,unusedcode,naming';
         if (file_exists($fileRule)) {
             $rule = $fileRule;
-        } else {
-            $rule = 'codesize,unusedcode,naming';
         }
         
         foreach ($files as $file) {
@@ -137,7 +147,7 @@ class CodeQualityTool extends Application
                 'text',
                 $rule
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR);
             $process = $processBuilder->getProcess();
             $process->run();
 
@@ -151,11 +161,11 @@ class CodeQualityTool extends Application
 
     protected function unitTests()
     {
-        $filePhpunit = ROOT_DIR.DIRECTORY_SEPARATOR.'phpunit.xml';
+        $filePhpunit = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpunit.xml';
 
         if (file_exists($filePhpunit)) {
             $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/phpunit'));
-            $processBuilder->setWorkingDirectory(ROOT_DIR);
+            $processBuilder->setWorkingDirectory(dirname(VENDOR_DIR));
             $processBuilder->setTimeout(3600);
             $phpunit = $processBuilder->getProcess();
 
@@ -174,15 +184,7 @@ class CodeQualityTool extends Application
     {
         $needle = '/(\.php)$/';
         $succeed = true;
-
-        $phpcsfix = ROOT_DIR.DIRECTORY_SEPARATOR.'phpcsfix.xml';
-
-        $fixers = 'psr2';
-        if (file_exists($phpcsfix)) {
-            $xml = simplexml_load_file($phpcsfix);
-            $fixers = strval($xml->fixers);
-        }
-
+        
         foreach ($files as $file) {
             $srcFile = preg_match($needle, $file);
 
@@ -198,13 +200,12 @@ class CodeQualityTool extends Application
                 '--verbose',
                 'fix',
                 $file,
-                '--fixers='.$fixers
             ]);
 
-            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
-
+            
             if (!$phpCsFixer->isSuccessful()) {
                 return $phpCsFixer->getOutput();
             }
@@ -218,7 +219,7 @@ class CodeQualityTool extends Application
         $succeed = true;
         $needle = '/(\.php)$/';
 
-        $phpcs = ROOT_DIR.DIRECTORY_SEPARATOR.'phpcs.xml';
+        $phpcs = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpcs.xml';
 
         if (file_exists($phpcs)) {
             $standard = $phpcs;
@@ -237,7 +238,7 @@ class CodeQualityTool extends Application
                 '--standard='.$standard,
                 $file
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
@@ -254,9 +255,9 @@ class CodeQualityTool extends Application
         $succeed = true;
         $needle = '/(\.js)$/';
 
-        $phpcsjs = ROOT_DIR.DIRECTORY_SEPARATOR.'phpcsjs.xml';
+        $phpcsjs = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpcsjs.xml';
 
-        $standard = 'Squiz';
+        $standard = 'squiz';
         if (file_exists($phpcsjs)) {
             $standard = $phpcsjs;
         }
@@ -272,7 +273,7 @@ class CodeQualityTool extends Application
                 '--standard='.$standard,
                 $file
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR.'/../');
+            $processBuilder->setWorkingDirectory(ROOT_DIR);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
