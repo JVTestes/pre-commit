@@ -19,17 +19,17 @@ Checks in our pre-commit hook
 
 The recommended way to install this library is through [Composer](http://getcomposer.org):
 
-add `juizmill/pre-commit` as a composer dependency.
+add `jv-testes/pre-commit` as a composer dependency.
 
 composer.json
 ```bash
 "require-dev": {
     ...
-    "juizmill/pre-commit": "dev-master"
+    "jv-testes/pre-commit": "1.2.0"
 }
 ```
 
-`php composer.phar update juizmill/pre-commit`
+`php composer.phar update jv-testes/pre-commit 1.2.0`
 
 
 **USAGE:**
@@ -47,22 +47,13 @@ Edit composer.json and add:
     }
 ```
 
-or
-
-```
-    cd [project]
-    rm -rf .git/hooks/pre-commit
-    cp vendor/juizmill/pre-commit/hooks/pre-commit .git/hooks/pre-commit
-    chmod -R 777 .git/hooks/pre-commit
-```
-
 Remembering to set up the hooks
 
 
 Custom config
 --------------
 
-Copy arquives `vendor/juizmill/pre-commit/config/*` to [project]
+Copy arquives `vendor/jv-testes/pre-commit/config/*` to [project]
 
 
 Reference
