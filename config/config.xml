@@ -4,8 +4,12 @@
     <dir>
         <!--full path to the .git-->
         <git>.../.git/</git>
-        <root>..../</root>
-        <vendor>...../</vendor>
+        
+        <!--full path to the DOCUMENT_ROOT-->
+        <root>....www</root>
+        
+        <!--full path to the  composer VENDOR-->
+        <vendor>...../vendor</vendor>
     </dir>
     
     <!--Run functions-->
