@@ -4,20 +4,13 @@
     <dir>
         <!--full path to the .git-->
         <git>.../.git/</git>
+        <root>..../</root>
+        <vendor>...../</vendor>
     </dir>
     
     <!--Run functions-->
     <run>
         <phpunit>false</phpunit>
         <phpcsfix>false</phpcsfix>
-        <slack>true</slack>
     </run>
-    
-    <!--Config Slack-->
-    <slackConfig>
-        <username>webhookbot</username>
-        <channel>#test</channel>
-        <icon>:scissors:</icon>
-        <url>https://hooks.slack.com/services/{token}</url>
-    </slackConfig>
 </config>

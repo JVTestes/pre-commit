@@ -2,12 +2,6 @@
 
 namespace PreCommit\Composer\Script;
 
-$fileDir = dirname(dirname(__FILE__));
-$vendorDir = dirname(dirname(dirname(dirname($fileDir))));
-
-define('VENDOR_DIR', $vendorDir);
-define('ROOT_DIR', dirname($vendorDir));
-
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\ProcessBuilder;
@@ -17,18 +11,25 @@ class CodeQualityTool extends Application
 {
     public $output;
     public $input;
+    public $config;
+    
+    public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
+    {
+        parent::__construct($name, $version);
+        
+        $xml = null;
+        $config = __DIR__. "/../../../../../config.xml";
+        if (! file_exists($config)) {
+            throw new \Exception('Config not found.');
+        }
+        
+        $this->config = simplexml_load_file($config);
+    }
     
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
         $this->output = $output;
-
-        $xml = null;
-
-        $config = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'config.xml';
-        if (file_exists($config)) {
-            $xml = simplexml_load_file($config);
-        }
         
         $output->writeln('<fg=white;options=bold;bg=red>Code Quality Tool</fg=white;options=bold;bg=red>');
         $output->writeln('<info>Fetching files</info>');
@@ -42,7 +43,7 @@ class CodeQualityTool extends Application
             throw new \Exception('There are some PHP syntax errors!');
         }
 
-        if (!isset($xml->run->phpcsfix) || ($xml->run->phpcsfix == 'true')) {
+        if (!isset($this->config->run->phpcsfix) || ($this->config->run->phpcsfix == 'true')) {
             $output->writeln('<info>Checking code style</info>');
             $codeStyle = $this->codeStyle($files);
             if ($codeStyle !== true) {
@@ -74,7 +75,7 @@ class CodeQualityTool extends Application
             throw new \Exception(sprintf('There are PHPMD violations!'));
         }
 
-        if (!isset($xml->run->phpunit) || ($xml->run->phpunit == 'true')) {
+        if (!isset($this->config->run->phpunit) || ($this->config->run->phpunit == 'true')) {
             $output->writeln('<info>Running unit tests</info>');
             if (!$this->unitTests()) {
                 throw new \Exception('Fix the fucking unit tests!');
@@ -128,7 +129,7 @@ class CodeQualityTool extends Application
         $needle = '/(\.php)$/';
         $succeed = true;
         
-        $fileRule = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpmd.xml';
+        $fileRule =  __DIR__. "/../../../../../phpmd.xml";
         
         $rule = 'codesize,unusedcode,naming';
         if (file_exists($fileRule)) {
@@ -142,7 +143,7 @@ class CodeQualityTool extends Application
 
             $processBuilder = new ProcessBuilder([
                 'php',
-                VENDOR_DIR.'/bin/phpmd',
+                $this->config->dir->vendor.'/bin/phpmd',
                 $file,
                 'text',
                 $rule
@@ -161,11 +162,11 @@ class CodeQualityTool extends Application
 
     protected function unitTests()
     {
-        $filePhpunit = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpunit.xml';
+        $filePhpunit = __DIR__. "/../../../../../phpunit.xml";
 
         if (file_exists($filePhpunit)) {
-            $processBuilder = new ProcessBuilder(array('php', VENDOR_DIR.'/bin/phpunit'));
-            $processBuilder->setWorkingDirectory(dirname(VENDOR_DIR));
+            $processBuilder = new ProcessBuilder(array('php', $this->config->dir->vendor.'/bin/phpunit'));
+            $processBuilder->setWorkingDirectory($this->config->dir->root);
             $processBuilder->setTimeout(3600);
             $phpunit = $processBuilder->getProcess();
 
@@ -194,7 +195,7 @@ class CodeQualityTool extends Application
 
             $processBuilder = new ProcessBuilder([
                 'php',
-                VENDOR_DIR.'/bin/php-cs-fixer',
+                $this->config->dir->vendor.'/bin/php-cs-fixer',
                 '--dry-run',
                 '--diff',
                 '--verbose',
@@ -202,7 +203,7 @@ class CodeQualityTool extends Application
                 $file,
             ]);
 
-            $processBuilder->setWorkingDirectory(ROOT_DIR);
+            $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
             
@@ -219,7 +220,7 @@ class CodeQualityTool extends Application
         $succeed = true;
         $needle = '/(\.php)$/';
 
-        $phpcs = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpcs.xml';
+        $phpcs = __DIR__. "/../../../../../phpcs.xml";
 
         if (file_exists($phpcs)) {
             $standard = $phpcs;
@@ -234,11 +235,11 @@ class CodeQualityTool extends Application
 
             $processBuilder = new ProcessBuilder([
                 'php',
-                VENDOR_DIR.'/bin/phpcs',
+                $this->config->dir->vendor.'/bin/phpcs',
                 '--standard='.$standard,
                 $file
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR);
+            $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
@@ -255,7 +256,7 @@ class CodeQualityTool extends Application
         $succeed = true;
         $needle = '/(\.js)$/';
 
-        $phpcsjs = dirname(VENDOR_DIR).DIRECTORY_SEPARATOR.'phpcsjs.xml';
+        $phpcsjs =  __DIR__. "/../../../../../phpcsjs.xml";
 
         $standard = 'squiz';
         if (file_exists($phpcsjs)) {
@@ -269,11 +270,11 @@ class CodeQualityTool extends Application
 
             $processBuilder = new ProcessBuilder([
                 'php',
-                VENDOR_DIR.'/bin/phpcs',
+                $this->config->dir->vendor.'/bin/phpcs',
                 '--standard='.$standard,
                 $file
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR);
+            $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
 
