@@ -25,12 +25,9 @@ composer.json
 ```bash
 "require-dev": {
     ...
-    "jv-testes/pre-commit": "1.2.3"
+    "jv-testes/pre-commit": ">=1.2.3"
 }
 ```
-
-`php composer.phar update jv-testes/pre-commit 1.2.3`
-
 
 **USAGE:**
 

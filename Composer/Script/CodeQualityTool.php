@@ -12,7 +12,7 @@ class CodeQualityTool extends Application
     public $output;
     public $input;
     public $config;
-    
+
     public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
     {
         parent::__construct($name, $version);
@@ -25,7 +25,7 @@ class CodeQualityTool extends Application
         
         $this->config = simplexml_load_file($config);
     }
-    
+
     public function doRun(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
@@ -80,7 +80,7 @@ class CodeQualityTool extends Application
             if (!$this->unitTests()) {
                 throw new \Exception('Fix the fucking unit tests!');
             }
-        }      
+        }
 
         $output->writeln('<info>Good job dude!</info>');
     }
@@ -128,14 +128,14 @@ class CodeQualityTool extends Application
     {
         $needle = '/(\.php)$/';
         $succeed = true;
-        
+
         $fileRule =  __DIR__. "/../../../../../phpmd.xml";
-        
+
         $rule = 'codesize,unusedcode,naming';
         if (file_exists($fileRule)) {
             $rule = $fileRule;
         }
-        
+
         foreach ($files as $file) {
             if (!preg_match($needle, $file)) {
                 continue;
@@ -148,7 +148,7 @@ class CodeQualityTool extends Application
                 'text',
                 $rule
             ]);
-            $processBuilder->setWorkingDirectory(ROOT_DIR);
+            $processBuilder->setWorkingDirectory($this->config->dir->root);
             $process = $processBuilder->getProcess();
             $process->run();
 
@@ -239,6 +239,7 @@ class CodeQualityTool extends Application
                 '--standard='.$standard,
                 $file
             ]);
+
             $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
@@ -274,6 +275,7 @@ class CodeQualityTool extends Application
                 '--standard='.$standard,
                 $file
             ]);
+
             $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
