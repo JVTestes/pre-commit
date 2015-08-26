@@ -47,12 +47,12 @@ class Hooks
         $gitHook = strval(static::config()->dir->git).
             DIRECTORY_SEPARATOR.'hooks'.
             DIRECTORY_SEPARATOR.'pre-commit';
-        
+
         $docHook = strval(static::config()->dir->vendor).
             DIRECTORY_SEPARATOR.'jv-testes'.
             DIRECTORY_SEPARATOR.'pre-commit'.
             DIRECTORY_SEPARATOR.'pre-commit';
-        
+
         if (file_exists($docHook)) {
             unlink($docHook);
         }
@@ -72,6 +72,10 @@ class Hooks
     protected static function createHook()
     {
         $load = strval(static::config()->dir->vendor).DIRECTORY_SEPARATOR.'autoload.php';
+
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $load = str_replace('\\', '\\\\', $load);
+    }
 
         $hook = <<< EOT
 #!/usr/bin/php

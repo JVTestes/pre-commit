@@ -16,13 +16,13 @@ class CodeQualityTool extends Application
     public function __construct($name = 'UNKNOWN', $version = 'UNKNOWN')
     {
         parent::__construct($name, $version);
-        
+
         $xml = null;
         $config = __DIR__. "/../../../../../config.xml";
         if (! file_exists($config)) {
             throw new \Exception('Config not found.');
         }
-        
+
         $this->config = simplexml_load_file($config);
     }
 
@@ -65,7 +65,7 @@ class CodeQualityTool extends Application
             $this->output->writeln(sprintf('<error>%s</error>', trim($codeStyleJS)));
             throw new \Exception(sprintf('There are PHPCS JS coding standards violations!'));
         }
-        
+
         $output->writeln('<info>Checking code mess with PHPMD</info>');
         $phpmd = $this->phPmd($files);
         if ($phpmd !== true) {
@@ -88,17 +88,19 @@ class CodeQualityTool extends Application
     protected function extractCommitedFiles()
     {
         $output = array();
-        $rc = 0;
+        $files = array();
 
-        exec('git rev-parse --verify HEAD 2> /dev/null', $output, $rc);
+        exec("git diff-index --cached --name-status HEAD", $files);
 
-        $against = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
-        if ($rc == 0) {
-            $against = 'HEAD';
+        foreach ($files as $value) {
+            if (preg_match("/^M.*\.(php|js)$/", $value)) {
+                $output[] = $this->convertStringToWin(preg_replace("/\s+/S", "", substr(ltrim($value), 1)));
+            }
+
+            if (preg_match("/^A.*\.(php|js)$/", $value)) {
+                $output[] = $this->convertStringToWin(preg_replace("/\s+/S", "", substr(ltrim($value), 1)));
+            }
         }
-
-        exec("git diff-index --cached --name-status $against | egrep '^(A|M)' | awk '{print $2;}'", $output);
-
         return $output;
     }
 
@@ -142,8 +144,7 @@ class CodeQualityTool extends Application
             }
 
             $processBuilder = new ProcessBuilder([
-                'php',
-                $this->config->dir->vendor.'/bin/phpmd',
+                $this->convertStringToWin($this->config->dir->vendor.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'phpmd'),
                 $file,
                 'text',
                 $rule
@@ -165,7 +166,9 @@ class CodeQualityTool extends Application
         $filePhpunit = __DIR__. "/../../../../../phpunit.xml";
 
         if (file_exists($filePhpunit)) {
-            $processBuilder = new ProcessBuilder(array('php', $this->config->dir->vendor.'/bin/phpunit'));
+            $processBuilder = new ProcessBuilder(array(
+                $this->convertStringToWin($this->config->dir->vendor.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'phpunit'),
+            ));
             $processBuilder->setWorkingDirectory($this->config->dir->root);
             $processBuilder->setTimeout(3600);
             $phpunit = $processBuilder->getProcess();
@@ -185,7 +188,7 @@ class CodeQualityTool extends Application
     {
         $needle = '/(\.php)$/';
         $succeed = true;
-        
+
         foreach ($files as $file) {
             $srcFile = preg_match($needle, $file);
 
@@ -194,8 +197,7 @@ class CodeQualityTool extends Application
             }
 
             $processBuilder = new ProcessBuilder([
-                'php',
-                $this->config->dir->vendor.'/bin/php-cs-fixer',
+                $this->convertStringToWin($this->config->dir->vendor.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'php-cs-fixer'),
                 '--dry-run',
                 '--diff',
                 '--verbose',
@@ -206,7 +208,7 @@ class CodeQualityTool extends Application
             $processBuilder->setWorkingDirectory($this->config->dir->root);
             $phpCsFixer = $processBuilder->getProcess();
             $phpCsFixer->run();
-            
+
             if (!$phpCsFixer->isSuccessful()) {
                 return $phpCsFixer->getOutput();
             }
@@ -234,8 +236,7 @@ class CodeQualityTool extends Application
             }
 
             $processBuilder = new ProcessBuilder([
-                'php',
-                $this->config->dir->vendor.'/bin/phpcs',
+                $this->convertStringToWin($this->config->dir->vendor.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'phpcs'),
                 '--standard='.$standard,
                 $file
             ]);
@@ -270,8 +271,7 @@ class CodeQualityTool extends Application
             }
 
             $processBuilder = new ProcessBuilder([
-                'php',
-                $this->config->dir->vendor.'/bin/phpcs',
+                $this->convertStringToWin($this->config->dir->vendor.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'phpcs'),
                 '--standard='.$standard,
                 $file
             ]);
@@ -286,5 +286,14 @@ class CodeQualityTool extends Application
         }
 
         return $succeed;
+    }
+
+    protected function convertStringToWin($string)
+    {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $string = str_replace('\\', '\\\\', $string);
+        }
+
+        return $string;
     }
 }
